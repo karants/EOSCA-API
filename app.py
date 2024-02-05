@@ -1,7 +1,7 @@
 #This is the EOSCA API running on Flask.
 
 #Importing pip libraries
-from flask import Flask, render_template, request, redirect, url_for, send_from_directory
+from flask import Flask, jsonify, render_template, request, redirect, url_for, send_from_directory
 
 #Initializing Flask instance
 app = Flask(__name__)
@@ -14,7 +14,7 @@ def home():
 
 @app.route("/healthcheck/", methods=['GET'])
 def healthcheck():
-    return "I'm up and running :)"
+    return jsonify({'message': "I'm up and running :)"})
 
 #Running the Flask instance
 if __name__ == '__main__':
