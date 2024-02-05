@@ -1,7 +1,7 @@
 #This is the EOSCA API running on Flask.
 
 #Importing pip libraries
-from flask import Flask, jsonify, render_template, request, redirect, url_for, send_from_directory
+from flask import Flask, jsonify
 
 #Initializing Flask instance
 app = Flask(__name__)
