@@ -10,7 +10,7 @@ app = Flask(__name__)
 
 @app.route("/", methods=['GET'])
 def home():
-    return "Welcome to the EOSCA API"
+    return "Welcome to the EOSCA API."
 
 @app.route("/healthcheck/", methods=['GET'])
 def healthcheck():
