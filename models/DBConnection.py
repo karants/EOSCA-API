@@ -13,4 +13,3 @@ class DBConnectionString:
 
     def GetConnectionString(self):
         return self.__conn_string
-test
