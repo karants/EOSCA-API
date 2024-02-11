@@ -41,8 +41,8 @@ class DBRead:
         # Defining the maximum number of hits to obtain
         self.maxhits = 10
 
-    # Function to get the top hits from the hits table
-    def GetTopHits(self):
+    # Function to get the values from RefreshState table
+    def GetRefreshState(self):
         # Executing the SQL query to get top hits
         self.cursor.execute("SELECT * FROM RefreshState ORDER BY hits DESC LIMIT ?", (self.maxhits,))
         self.hits = self.cursor.fetchall()
@@ -55,3 +55,5 @@ class DBRead:
 
         # Returning array of exoplanet names
         return self.tophits
+    
+    test
