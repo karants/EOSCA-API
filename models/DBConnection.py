@@ -56,4 +56,3 @@ class DBRead:
         # Returning array of exoplanet names
         return self.tophits
     
-    test
