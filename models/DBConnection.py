@@ -9,7 +9,13 @@ class DBConnectionString:
         
         #Load Env Variables and Construct Connection String
         load_dotenv()
-        self.__conn_string = os.getenv('AZURE_SQL_CONNECTIONSTRING')
+        self.__driver=os.getenv('driver')
+        self.__server = os.getenv('server')
+        self.__database = os.getenv('database')
+        self.__sqlusername = os.getenv('sqlusername')
+        self.__sqlpassword = os.getenv('sqlpassword')
+        self.__conn_string = 'DRIVER='+self.__driver+';SERVER=tcp:'+self.__server+';PORT=1433;DATABASE='+self.__database+';UID='+self.__sqlusername+';PWD='+ self.__sqlpassword
+
 
     def GetConnectionString(self):
         return self.__conn_string
@@ -57,12 +63,12 @@ class DBRead:
     # Function to get the values from RefreshState table
     def GetRefreshState(self):
 
-        # Executing the SQL query to get top hits
-        self.cursor.execute("SELECT * FROM RefreshState")
-        self.rows = self.cursor.fetchall()
+        self.conn = self.pool.acquire()
+        self.conn.execute("SELECT * FROM RefreshState")
+        self.rows = self.conn.fetchall()
     
         # Closing the cursor
-        self.cursor.close()
+        self.conn.close()
 
         # Returning rows
         return self.rows
