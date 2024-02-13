@@ -64,18 +64,11 @@ class DBRead:
     def GetRefreshState(self):
 
         self.conn = self.pool.acquire()
-        self.conn.execute("SELECT * FROM RefreshState")
+        self.conn.execute("SELECT * FROM Status")
         self.rows = self.conn.fetchall()
     
         # Closing the cursor
         self.conn.close()
 
         # Returning rows
-        return self.rows
-    
-
-DBReadConnection = DBRead()
-
-refreshstate = DBReadConnection.GetRefreshState()
-
-print(refreshstate)
+        return self.rows[0][1]
