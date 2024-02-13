@@ -16,10 +16,23 @@ class DBConnectionString:
 
 #Object Pool implementation
 class DBReadPool:
-    def __init__(self, size, connection_string):
-        self.conn_string = connection_string
+
+    _instance = None
+
+    def __init__(self, size):
+
+        if DBReadPool._instance != None:
+            raise Exception("%s is a Singleton object. It can only be instantiated once." % type(self).__name__)
+        else:
+            DBReadPool._instance = self
+
+        self.conn = DBConnectionString()
+        self.conn_string = self.conn.GetConnectionString()
+
+        #array for the pool
         self._reusableconnections = []
 
+        #filling up the pool with DB connections
         for _ in range(size):
             self.conn = pyodbc.connect(self.conn_string)
             self._reusableconnections.append(self.conn.cursor())
@@ -33,26 +46,30 @@ class DBReadPool:
 #Executing DB read functions
 class DBRead:
 
-    def __init__(self, connection_string):
-        # Connect to DB 
-        self.conn = pyodbc.connect(connection_string)
-        self.cursor = self.conn.cursor()
+    def __init__(self):
 
-        # Defining the maximum number of hits to obtain
-        self.maxhits = 10
+        #instantiating the pool with a size
+        self.pool = DBReadPool(5)
+
+        # Defining the maximum number of closest approaches to obtain
+        self.numberofcas = 50
 
     # Function to get the values from RefreshState table
     def GetRefreshState(self):
-        # Executing the SQL query to get top hits
-        self.cursor.execute("SELECT * FROM RefreshState ORDER BY hits DESC LIMIT ?", (self.maxhits,))
-        self.hits = self.cursor.fetchall()
-        
-        # Extracting exoplanet names from the results
-        self.tophits = [row[0] for row in self.hits]
 
+        # Executing the SQL query to get top hits
+        self.cursor.execute("SELECT * FROM RefreshState")
+        self.rows = self.cursor.fetchall()
+    
         # Closing the cursor
         self.cursor.close()
 
-        # Returning array of exoplanet names
-        return self.tophits
+        # Returning rows
+        return self.rows
     
+
+DBReadConnection = DBRead()
+
+refreshstate = DBReadConnection.GetRefreshState()
+
+print(refreshstate)
