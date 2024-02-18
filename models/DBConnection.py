@@ -19,8 +19,77 @@ class DBConnectionString:
 
     def GetConnectionString(self):
         return self.__conn_string
+    
 
-#Object Pool implementation
+#Singleton Pattern Implementation for Logging Data to the DB
+
+class DBWrite:
+    _instance = None
+
+    def __init__(self):
+
+        if DBWrite._instance != None:
+            raise Exception("%s is a Singleton object. It can only be instantiated once." % type(self).__name__)
+        else:
+            DBWrite._instance = self
+
+        self.conn = DBConnectionString()
+        self.conn_string = self.conn.GetConnectionString()
+        self.conn = pyodbc.connect(self.conn_string)
+        self.cursor = self.conn.cursor()
+
+    def ClearSpaceObjectTelemetry(self):
+
+        #Drop the table
+        self.conn.execute("DROP TABLE IF EXISTS SpaceObjectTelemetry;")
+
+        #Create the table. Object ID is the primary key.
+        self.conn.execute(""" CREATE TABLE SpaceObjectTelemetry (
+                                    CCSDS_OMM_VERS VARCHAR(50),
+                                    COMMENT VARCHAR(255),
+                                    CREATION_DATE DATETIME2,
+                                    ORIGINATOR VARCHAR(50),
+                                    OBJECT_NAME VARCHAR(255),
+                                    OBJECT_ID VARCHAR(50) PRIMARY KEY,
+                                    CENTER_NAME VARCHAR(50),
+                                    REF_FRAME VARCHAR(50),
+                                    TIME_SYSTEM VARCHAR(50),
+                                    MEAN_ELEMENT_THEORY VARCHAR(50),
+                                    EPOCH DATETIME2,
+                                    MEAN_MOTION FLOAT,
+                                    ECCENTRICITY FLOAT,
+                                    INCLINATION FLOAT,
+                                    RA_OF_ASC_NODE FLOAT,
+                                    ARG_OF_PERICENTER FLOAT,
+                                    MEAN_ANOMALY FLOAT,
+                                    EPHEMERIS_TYPE INT,
+                                    CLASSIFICATION_TYPE CHAR(1),
+                                    NORAD_CAT_ID INT,
+                                    ELEMENT_SET_NO VARCHAR(50),
+                                    REV_AT_EPOCH INT,
+                                    BSTAR FLOAT,
+                                    MEAN_MOTION_DOT FLOAT,
+                                    MEAN_MOTION_DDOT FLOAT,
+                                    SEMIMAJOR_AXIS FLOAT,
+                                    PERIOD_NUM FLOAT,
+                                    APOAPSIS FLOAT,
+                                    PERIAPSIS FLOAT,
+                                    OBJECT_TYPE VARCHAR(50),
+                                    RCS_SIZE VARCHAR(50),
+                                    COUNTRY_CODE CHAR(2),
+                                    LAUNCH_DATE DATE,
+                                    SITE VARCHAR(50),
+                                    DECAY_DATE DATE,
+                                    FILE_NUM BIGINT,
+                                    GP_ID BIGINT,
+                                    TLE_LINE0 VARCHAR(255),
+                                    TLE_LINE1 VARCHAR(255),
+                                    TLE_LINE2 VARCHAR(255)
+                            )""")
+        self.conn.commit()
+
+
+#Object Pool implementation for DB Read
 class DBReadPool:
 
     _instance = None

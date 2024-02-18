@@ -3,15 +3,27 @@
 #Importing pip libraries
 from flask import Flask, jsonify, request
 import flask_swagger_ui
+from apscheduler.schedulers.background import BackgroundScheduler
 
 #importing classes from model directory
-from models.DBConnection import DBRead
+from models.DBConnection import DBRead, DBWrite
+
+#Instantiating Database Write & Read Connections
+DBReadConnection = DBRead()
+DBWriteConnection = DBWrite()
+
+#function definition for refreshing
+def refreshTelemetry():
+
+    #Recreate the telemetry table
+    DBWriteConnection.ClearSpaceObjectTelemetry()
+    
+    
 
 #Initializing Flask instance
 app = Flask(__name__)
 
-#Instantiating Database Write & Read Connections
-DBReadConnection = DBRead()
+refreshTelemetry()
 
 #App routes
 
