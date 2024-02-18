@@ -9,11 +9,17 @@ import os
 import datetime
 
 #importing classes from model directory
-from models.DBConnection import DBRead, DBWrite
+from models.DBConnection import DBRead, DBWrite, DBConnTest
 
 #Instantiating Database Write & Read Connections
 DBReadConnection = DBRead()
 DBWriteConnection = DBWrite()
+DBConnectionTest = DBConnTest()
+
+connectionstatus = DBConnectionTest.TestConnection()
+
+if (connectionstatus):
+    print("connected to SQL successfully.")
 
 #function definition for refreshing
 def refreshTelemetry():

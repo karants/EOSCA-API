@@ -3,6 +3,7 @@ import os
 import pyodbc
 import json
 from datetime import datetime
+import time
 
 #Defining the connection string to the DB that can be utilized by multiple DB connection objects - reducing code duplication
 class DBConnectionString:
@@ -22,6 +23,43 @@ class DBConnectionString:
     def GetConnectionString(self):
         return self.__conn_string
     
+class DBConnTest:
+
+    def __init__(self):
+
+        self.conn = DBConnectionString()
+        self.conn_string = self.conn.GetConnectionString()
+
+    def TestConnection(self):
+            
+            def testsqlconn():
+                try:
+                    self.conn = pyodbc.connect(self.conn_string, timeout=10)
+                    self.conn.close()
+                    return True
+                except Exception as e:
+                    print(f"Connection failed: {e}")
+                    return False
+
+            # Initialize the retry count
+            max_retries = 20
+            attempt_count = 0
+
+            # Loop until connection is successful or max retries reached
+            while attempt_count < max_retries:
+                if testsqlconn():
+                    return True
+                
+                attempt_count += 1
+                print(f"Retry attempt {attempt_count} of {max_retries}...")
+                time.sleep(2)  # Wait for 2 seconds before retrying
+
+            if attempt_count == max_retries:
+                print("Failed to connect after maximum retries.")
+            else:
+                print("Connected to SQL Server successfully.")
+
+
 
 #Singleton Pattern Implementation for Logging Data to the DB
 
