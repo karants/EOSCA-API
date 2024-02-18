@@ -4,6 +4,9 @@
 from flask import Flask, jsonify, request
 import flask_swagger_ui
 from apscheduler.schedulers.background import BackgroundScheduler
+from dotenv import load_dotenv
+import os
+import datetime
 
 #importing classes from model directory
 from models.DBConnection import DBRead, DBWrite
@@ -17,13 +20,17 @@ def refreshTelemetry():
 
     #Recreate the telemetry table
     DBWriteConnection.ClearSpaceObjectTelemetry()
-    
+    DBWriteConnection.CopySpaceObjectTelemetry()
     
 
 #Initializing Flask instance
 app = Flask(__name__)
 
-refreshTelemetry()
+runrefreshflag = 1 #ONLY CHANGE TO 1 IF REFRESHING THE TELEMETRY IS REQUIRED
+
+if(runrefreshflag==1):
+
+    refreshTelemetry()
 
 #App routes
 
@@ -47,6 +54,25 @@ def getrefreshstatus():
 
     if(status != 1):
         return jsonify({'message': "ready"})
+
+@app.route("/refresh/lastrefreshtime", methods=['GET'])
+
+def getlastrefreshtime():
+
+    lastrefresh = DBReadConnection.GetLastDataRefreshTime()
+
+    print(lastrefresh)
+
+    return jsonify({'lastrefresh': lastrefresh})
+
+    
+@app.route('/satellite/list', methods = ['GET'])
+
+def getsatellites():
+
+    satellites = DBReadConnection.GetSatellites()
+
+    return jsonify(satellites)
 
 @app.route('/satellite/ephemeris',methods = ['POST'])
 

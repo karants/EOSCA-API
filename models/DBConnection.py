@@ -1,6 +1,8 @@
 from dotenv import load_dotenv
 import os
 import pyodbc
+import json
+from datetime import datetime
 
 #Defining the connection string to the DB that can be utilized by multiple DB connection objects - reducing code duplication
 class DBConnectionString:
@@ -45,51 +47,67 @@ class DBWrite:
 
         #Create the table. Object ID is the primary key.
         self.conn.execute(""" CREATE TABLE SpaceObjectTelemetry (
-                                    CCSDS_OMM_VERS VARCHAR(50),
-                                    COMMENT VARCHAR(255),
                                     CREATION_DATE DATETIME2,
-                                    ORIGINATOR VARCHAR(50),
                                     OBJECT_NAME VARCHAR(255),
                                     OBJECT_ID VARCHAR(50) PRIMARY KEY,
-                                    CENTER_NAME VARCHAR(50),
-                                    REF_FRAME VARCHAR(50),
-                                    TIME_SYSTEM VARCHAR(50),
-                                    MEAN_ELEMENT_THEORY VARCHAR(50),
-                                    EPOCH DATETIME2,
-                                    MEAN_MOTION FLOAT,
-                                    ECCENTRICITY FLOAT,
-                                    INCLINATION FLOAT,
-                                    RA_OF_ASC_NODE FLOAT,
-                                    ARG_OF_PERICENTER FLOAT,
-                                    MEAN_ANOMALY FLOAT,
-                                    EPHEMERIS_TYPE INT,
-                                    CLASSIFICATION_TYPE CHAR(1),
                                     NORAD_CAT_ID INT,
-                                    ELEMENT_SET_NO VARCHAR(50),
-                                    REV_AT_EPOCH INT,
-                                    BSTAR FLOAT,
-                                    MEAN_MOTION_DOT FLOAT,
-                                    MEAN_MOTION_DDOT FLOAT,
-                                    SEMIMAJOR_AXIS FLOAT,
-                                    PERIOD_NUM FLOAT,
-                                    APOAPSIS FLOAT,
-                                    PERIAPSIS FLOAT,
                                     OBJECT_TYPE VARCHAR(50),
-                                    RCS_SIZE VARCHAR(50),
-                                    COUNTRY_CODE CHAR(2),
-                                    LAUNCH_DATE DATE,
-                                    SITE VARCHAR(50),
-                                    DECAY_DATE DATE,
-                                    FILE_NUM BIGINT,
-                                    GP_ID BIGINT,
                                     TLE_LINE0 VARCHAR(255),
                                     TLE_LINE1 VARCHAR(255),
                                     TLE_LINE2 VARCHAR(255)
                             )""")
         self.conn.commit()
 
+    def CopySpaceObjectTelemetry(self):
 
-#Object Pool implementation for DB Read
+        file_path = 'spacetrackfeb17.json'
+
+        with open(file_path, 'r') as file:
+            data = json.load(file)
+
+        # Function to parse and return datetime object from string
+        def parse_datetime(datetime_str):
+            try:
+                return datetime.strptime(datetime_str, "%Y-%m-%dT%H:%M:%S")
+            except ValueError:  # Adjust the format if it doesn't match
+                return datetime.strptime(datetime_str, "%Y-%m-%dT%H:%M:%S.%f")
+
+        # Deduplication logic
+        unique_records = {}
+        for item in data:
+            object_id = item["OBJECT_ID"]
+            creation_date = parse_datetime(item["CREATION_DATE"])
+            if object_id not in unique_records or creation_date > parse_datetime(unique_records[object_id]["CREATION_DATE"]):
+                unique_records[object_id] = item
+
+        sql_query = '''
+                INSERT INTO SpaceObjectTelemetry (CREATION_DATE, OBJECT_NAME, OBJECT_ID, NORAD_CAT_ID, OBJECT_TYPE, TLE_LINE0, TLE_LINE1, TLE_LINE2)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ''' 
+        i = 1
+        # Iterate over each item in the JSON data and insert it into the database
+        for item in unique_records.values():
+            self.conn.execute(sql_query, (
+                item.get("CREATION_DATE"),
+                item.get("OBJECT_NAME"),
+                item.get("OBJECT_ID"),
+                item.get("NORAD_CAT_ID"),
+                item.get("OBJECT_TYPE"),
+                item.get("TLE_LINE0"),
+                item.get("TLE_LINE1"),
+                item.get("TLE_LINE2")
+            ))
+
+            # Commit the transaction for each insert to ensure data integrity
+            self.conn.commit()
+            print(i)
+            i=i+1
+
+        sql_query = "UPDATE LastRefresh SET Refresh_Time = ? WHERE Refresh_ID = 1"
+        self.conn.execute(sql_query, (datetime.now()))
+        self.conn.commit()
+
+#Object Pool + Singleton implementation for DB Read
 class DBReadPool:
 
     _instance = None
@@ -129,6 +147,8 @@ class DBRead:
         # Defining the maximum number of closest approaches to obtain
         self.numberofcas = 50
 
+        self.satellites = []
+
     # Function to get the values from RefreshState table
     def GetRefreshState(self):
 
@@ -141,3 +161,31 @@ class DBRead:
 
         # Returning rows
         return self.rows[0][1]
+    
+    def GetLastDataRefreshTime(self):
+
+        self.conn = self.pool.acquire()
+        self.conn.execute("SELECT * FROM LastRefresh")
+        self.rows = self.conn.fetchall()
+    
+        # Closing the cursor
+        self.conn.close()
+
+        # Returning rows
+        return self.rows[0][1]
+    
+    def GetSatellites(self):
+
+        self.conn = self.pool.acquire()
+        self.conn.execute("SELECT OBJECT_NAME, OBJECT_ID FROM SpaceObjectTelemetry WHERE OBJECT_TYPE = 'PAYLOAD'")
+        self.rows = self.conn.fetchall()
+    
+        # Closing the cursor
+        self.conn.close()
+
+        # Convert fetched data to a list of dictionaries
+        self.satellites = [{"ObjectName": row[0], "ObjectID": row[1]} for row in self.rows]
+
+
+        # Returning rows
+        return self.satellites
