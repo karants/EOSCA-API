@@ -26,7 +26,7 @@ def refreshTelemetry():
 #Initializing Flask instance
 app = Flask(__name__)
 
-runrefreshflag = 1 #ONLY CHANGE TO 1 IF REFRESHING THE TELEMETRY IS REQUIRED
+runrefreshflag = 0 #ONLY CHANGE TO 1 IF REFRESHING THE TELEMETRY IS REQUIRED
 
 if(runrefreshflag==1):
 
