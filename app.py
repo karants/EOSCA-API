@@ -10,6 +10,7 @@ import datetime
 from satellite_czml import satellite_czml
 from satellite_czml import satellite
 import sys
+from flask_cors import CORS
 
 #importing classes from model directory
 from models.DBConnection import DBRead, DBWrite, DBConnTest
@@ -31,6 +32,7 @@ def refreshTelemetry():
 
 #Initializing Flask instance
 app = Flask(__name__)
+CORS(app)
 
 runrefreshflag = 0 #ONLY CHANGE TO 1 IF REFRESHING THE TELEMETRY IS REQUIRED
 
