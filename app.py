@@ -7,9 +7,12 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from dotenv import load_dotenv
 import os
 import datetime
+from satellite_czml import satellite_czml
+from satellite_czml import satellite
 
 #importing classes from model directory
 from models.DBConnection import DBRead, DBWrite, DBConnTest
+from models.SpaceObjects import SatelliteElement
 
 #Instantiating Database Write & Read Connections
 DBReadConnection = DBRead()
@@ -83,8 +86,20 @@ def getsatellites():
 @app.route('/satellite/ephemeris',methods = ['POST'])
 
 def satelliteephemeris():
+    
     satelliteid = request.form['satid']
 
+    SatelliteTLE = DBReadConnection.GetSatelliteTLE(satelliteid)
+
+    SatelliteObject = SatelliteElement(SatelliteTLE)
+
+    satelliteczml = SatelliteObject.GetCZML()
+
+    czml_obj = satellite_czml(satellite_list=[satelliteczml])
+
+    czml_content = czml_obj.get_czml()
+
+    return czml_content
 
 #Running the Flask instance
 if __name__ == '__main__':

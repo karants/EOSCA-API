@@ -186,6 +186,7 @@ class DBRead:
         self.numberofcas = 50
 
         self.satellites = []
+        self.satelliteTLE = []
 
     # Function to get the values from RefreshState table
     def GetRefreshState(self):
@@ -227,3 +228,22 @@ class DBRead:
 
         # Returning rows
         return self.satellites
+    
+    def GetSatelliteTLE(self, SatelliteID):
+
+        self.conn = self.pool.acquire()
+        sql_query = "SELECT TLE_LINE0, TLE_LINE1, TLE_LINE2 FROM SpaceObjectTelemetry WHERE OBJECT_ID = ?"
+        self.conn.execute(sql_query, (SatelliteID,))
+        self.row = self.conn.fetchone()
+    
+        # Closing the cursor
+        self.conn.close()
+
+        # Convert fetched data to a list of dictionaries
+        if self.row:
+            self.satelliteTLE = [self.row[0], self.row[1], self.row[2]]
+        else:
+            self.satelliteTLE = []  # In case there is no result for the given SatelliteID
+
+        # Returning rows
+        return self.satelliteTLE
