@@ -16,10 +16,6 @@ from flask_cors import CORS
 from models.DBConnection import DBRead, DBWrite, DBConnTest
 from models.SpaceObjects import SatelliteElement
 
-#Instantiating Database Write & Read Connections
-DBReadConnection = DBRead()
-DBWriteConnection = DBWrite()
-DBConnectionTest = DBConnTest()
 
 
 #function definition for refreshing
@@ -33,6 +29,12 @@ def refreshTelemetry():
 #Initializing Flask instance
 app = Flask(__name__)
 CORS(app)
+
+#Instantiating Database Write & Read Connections
+DBReadConnection = DBRead()
+DBWriteConnection = DBWrite()
+DBConnectionTest = DBConnTest()
+
 
 runrefreshflag = 0 #ONLY CHANGE TO 1 IF REFRESHING THE TELEMETRY IS REQUIRED
 
