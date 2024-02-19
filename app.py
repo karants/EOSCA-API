@@ -9,6 +9,7 @@ import os
 import datetime
 from satellite_czml import satellite_czml
 from satellite_czml import satellite
+import sys
 
 #importing classes from model directory
 from models.DBConnection import DBRead, DBWrite, DBConnTest
@@ -19,10 +20,6 @@ DBReadConnection = DBRead()
 DBWriteConnection = DBWrite()
 DBConnectionTest = DBConnTest()
 
-connectionstatus = DBConnectionTest.TestConnection()
-
-if (connectionstatus):
-    print("connected to SQL successfully.")
 
 #function definition for refreshing
 def refreshTelemetry():
@@ -103,4 +100,13 @@ def satelliteephemeris():
 
 #Running the Flask instance
 if __name__ == '__main__':
-   app.run()
+    
+    DBConnectionTest = DBConnTest()
+    if not DBConnectionTest.TestConnection():
+        print("Unable to connect to the database after multiple retries. Please check the database status.")
+        sys.exit(1)
+        
+    else:
+        # Proceed with running the Flask app if the connection is successful
+        if __name__ == '__main__':
+            app.run()

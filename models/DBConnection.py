@@ -24,42 +24,25 @@ class DBConnectionString:
         return self.__conn_string
     
 class DBConnTest:
-
     def __init__(self):
-
-        self.conn = DBConnectionString()
-        self.conn_string = self.conn.GetConnectionString()
+        self.conn_string = DBConnectionString().GetConnectionString()
 
     def TestConnection(self):
-            
-            def testsqlconn():
-                try:
-                    self.conn = pyodbc.connect(self.conn_string, timeout=10)
-                    self.conn.close()
-                    return True
-                except Exception as e:
-                    print(f"Connection failed: {e}")
-                    return False
-
-            # Initialize the retry count
-            max_retries = 20
-            attempt_count = 0
-
-            # Loop until connection is successful or max retries reached
-            while attempt_count < max_retries:
-                if testsqlconn():
-                    return True
-                
+        max_retries = 10
+        attempt_count = 0
+        while attempt_count < max_retries:
+            try:
+                conn = pyodbc.connect(self.conn_string, timeout=10)
+                conn.close()
+                print("Connected to SQL successfully.")
+                return True
+            except Exception as e:
+                print(f"Connection failed: {e}")
                 attempt_count += 1
                 print(f"Retry attempt {attempt_count} of {max_retries}...")
                 time.sleep(2)  # Wait for 2 seconds before retrying
-
-            if attempt_count == max_retries:
-                print("Failed to connect after maximum retries.")
-            else:
-                print("Connected to SQL Server successfully.")
-
-
+        print("Failed to connect after maximum retries.")
+        return False
 
 #Singleton Pattern Implementation for Logging Data to the DB
 
