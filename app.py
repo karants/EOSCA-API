@@ -16,8 +16,6 @@ from flask_cors import CORS
 from models.DBConnection import DBRead, DBWrite, DBConnTest
 from models.SpaceObjects import SatelliteElement
 
-
-
 #function definition for refreshing
 def refreshTelemetry():
 
@@ -91,6 +89,8 @@ def satelliteephemeris():
     satelliteid = request.form['satid']
 
     SatelliteTLE = DBReadConnection.GetSatelliteTLE(satelliteid)
+
+    print(SatelliteTLE)
 
     SatelliteObject = SatelliteElement(SatelliteTLE)
 

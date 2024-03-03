@@ -178,8 +178,8 @@ class DBRead:
         self.conn.execute("SELECT * FROM Status")
         self.rows = self.conn.fetchall()
     
-        # Closing the cursor
-        self.conn.close()
+        # release the conn
+        self.pool.release(self.conn)
 
         # Returning rows
         return self.rows[0][1]
@@ -190,8 +190,8 @@ class DBRead:
         self.conn.execute("SELECT * FROM LastRefresh")
         self.rows = self.conn.fetchall()
     
-        # Closing the cursor
-        self.conn.close()
+        # release the conn
+        self.pool.release(self.conn)
 
         # Returning rows
         return self.rows[0][1]
@@ -202,8 +202,8 @@ class DBRead:
         self.conn.execute("SELECT OBJECT_NAME, OBJECT_ID FROM SpaceObjectTelemetry WHERE OBJECT_TYPE = 'PAYLOAD'")
         self.rows = self.conn.fetchall()
     
-        # Closing the cursor
-        self.conn.close()
+        # release the conn
+        self.pool.release(self.conn)
 
         # Convert fetched data to a list of dictionaries
         self.satellites = [{"ObjectName": row[0], "ObjectID": row[1]} for row in self.rows]
@@ -219,8 +219,8 @@ class DBRead:
         self.conn.execute(sql_query, (SatelliteID,))
         self.row = self.conn.fetchone()
     
-        # Closing the cursor
-        self.conn.close()
+        # release the conn
+        self.pool.release(self.conn)
 
         # Convert fetched data to a list of dictionaries
         if self.row:

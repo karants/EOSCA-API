@@ -67,4 +67,3 @@ class MediumLowRiskDebrisElement(DebrisElement):
     def display_element(self):
         # Implementation specific to MediumLowRiskDebrisElement
         print(f"Displaying Medium-Low Risk Debris Element. Show path: {self.show_path}, Risk level: {self.risk_level}")
-
