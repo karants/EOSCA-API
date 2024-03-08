@@ -90,17 +90,11 @@ def satelliteephemeris():
 
     SatelliteTLE = DBReadConnection.GetSatelliteTLE(satelliteid)
 
-    print(SatelliteTLE)
-
     SatelliteObject = SatelliteElement(SatelliteTLE)
 
     satelliteczml = SatelliteObject.GetCZML()
 
-    czml_obj = satellite_czml(satellite_list=[satelliteczml])
-
-    czml_content = czml_obj.get_czml()
-
-    return czml_content
+    return satelliteczml
 
 #Running the Flask instance
 if __name__ == '__main__':
