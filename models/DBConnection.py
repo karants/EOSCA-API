@@ -215,7 +215,7 @@ class DBRead:
     def GetSatelliteTLE(self, SatelliteID):
 
         self.conn = self.pool.acquire()
-        sql_query = "SELECT TLE_LINE0, TLE_LINE1, TLE_LINE2 FROM SpaceObjectTelemetry WHERE OBJECT_ID = ?"
+        sql_query = "SELECT OBJECT_ID, TLE_LINE0, TLE_LINE1, TLE_LINE2 FROM SpaceObjectTelemetry WHERE OBJECT_ID = ?"
         self.conn.execute(sql_query, (SatelliteID,))
         self.row = self.conn.fetchone()
     
@@ -224,9 +224,49 @@ class DBRead:
 
         # Convert fetched data to a list of dictionaries
         if self.row:
-            self.satelliteTLE = [self.row[0], self.row[1], self.row[2]]
+            self.satelliteTLE = [self.row[0], self.row[1], self.row[2], self.row[3]]
         else:
             self.satelliteTLE = []  # In case there is no result for the given SatelliteID
 
         # Returning rows
         return self.satelliteTLE
+    
+    def GetDebris(self):
+
+        self.conn = self.pool.acquire()
+        self.conn.execute("SELECT OBJECT_NAME, OBJECT_ID FROM SpaceObjectTelemetry WHERE OBJECT_TYPE = 'DEBRIS'")
+        self.rows = self.conn.fetchall()
+    
+        # release the conn
+        self.pool.release(self.conn)
+
+        # Convert fetched data to a list of dictionaries
+        self.debris = [{"ObjectName": row[0], "ObjectID": row[1]} for row in self.rows]
+
+
+        # Returning rows
+        return self.debris
+    
+    def GetDebrisTLEs(self):
+
+        self.conn = self.pool.acquire()
+        sql_query = "SELECT OBJECT_ID, TLE_LINE0, TLE_LINE1, TLE_LINE2 FROM SpaceObjectTelemetry WHERE OBJECT_TYPE = 'DEBRIS'"
+        self.conn.execute(sql_query)
+        rows = self.conn.fetchall()
+    
+        # release the conn
+        self.pool.release(self.conn)
+
+         # Initialize a list to hold all the TLEs
+        self.DebrisTLEs = []
+
+        # Convert fetched data to a list of dictionaries
+        if rows:
+            for row in rows:
+                # Append each TLE set to the list
+                self.DebrisTLEs.append([row[0], row[1], row[2], row[3]])
+        else:
+            self.DebrisTLEs = []  # In case there are no results
+
+        # Return the list of TLEs
+        return self.DebrisTLEs

@@ -2,7 +2,6 @@
 
 #Importing pip libraries
 from flask import Flask, jsonify, request
-import flask_swagger_ui
 from apscheduler.schedulers.background import BackgroundScheduler
 from dotenv import load_dotenv
 import os
@@ -11,10 +10,12 @@ from satellite_czml import satellite_czml
 from satellite_czml import satellite
 import sys
 from flask_cors import CORS
+import json
 
 #importing classes from model directory
 from models.DBConnection import DBRead, DBWrite, DBConnTest
-from models.SpaceObjects import SatelliteElement
+from models.RiskAssessment import CollisionRiskAssessor
+from models.SpaceObjects import DebrisElement, SatelliteElement
 
 #function definition for refreshing
 def refreshTelemetry():
@@ -95,6 +96,48 @@ def satelliteephemeris():
     satelliteczml = SatelliteObject.GetCZML()
 
     return satelliteczml
+
+@app.route('/debris/list', methods = ['GET'])
+
+def getdebris():
+
+    debris = DBReadConnection.GetDebris()
+
+    return jsonify(debris)
+
+@app.route('/satellite/riskassessment',methods = ['POST'])
+
+def riskassessment():
+    
+    satelliteid = request.form['satid']
+
+    SatelliteTLE = DBReadConnection.GetSatelliteTLE(satelliteid)
+
+    DebrisTLEs = DBReadConnection.GetDebrisTLEs()
+
+    satellite_object = SatelliteElement(SatelliteTLE)
+
+    debris_objects = [DebrisElement(TLE) for TLE in DebrisTLEs]
+
+    RiskAssessor = CollisionRiskAssessor() 
+
+    risk_assessments = RiskAssessor.assess_collision_risk(satellite_object, debris_objects)
+
+    risk_assessments_sorted = sorted(risk_assessments, key=lambda x: x.closest_approach_distance, reverse=False)[:50]
+
+    risk_assessments_json = []
+
+    for assessment in risk_assessments_sorted:
+        assessment_dict = {
+            "Time of Closest Approach": assessment.closest_approach_time.strftime("%Y-%m-%d %H:%M:%S"),
+            "Closest Approach Distance (km)": assessment.closest_approach_distance,
+            "Object": assessment.debris_id,
+            "Probability of Collision": assessment.probability,
+            "Risk Severity": assessment.risk_level
+        }
+        risk_assessments_json.append(assessment_dict)
+
+    return jsonify(risk_assessments_json)
 
 #Running the Flask instance
 if __name__ == '__main__':
