@@ -53,7 +53,6 @@ class CollisionRiskAssessor:
         risk_assessments = []
         
         for i, debris in enumerate(debris_objects, start=1):
-            print(i)
             closest_approach_distance = float('inf')
             closest_approach_time = None
 
