@@ -270,3 +270,23 @@ class DBRead:
 
         # Return the list of TLEs
         return self.DebrisTLEs
+    
+    def GetDebrisTLEForObject(self,objectid):
+
+        self.conn = self.pool.acquire()
+        sql_query = "SELECT OBJECT_ID, TLE_LINE0, TLE_LINE1, TLE_LINE2 FROM SpaceObjectTelemetry WHERE OBJECT_ID = ?"
+        self.conn.execute(sql_query, (objectid,))
+        self.row = self.conn.fetchone()
+    
+        # release the conn
+        self.pool.release(self.conn)
+
+        # Convert fetched data to a list of dictionaries
+        if self.row:
+            self.debrisTLE = [self.row[0], self.row[1], self.row[2], self.row[3]]
+        else:
+            self.debrisTLE = []  # In case there is no result for the given SatelliteID
+
+        # Returning rows
+        return self.debrisTLE
+    

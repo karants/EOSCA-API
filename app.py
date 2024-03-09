@@ -10,6 +10,8 @@ from satellite_czml import satellite_czml
 from satellite_czml import satellite
 import sys
 from flask_cors import CORS
+from satellite_czml import satellite_czml as sczml
+from satellite_czml import satellite as sat
 import json
 
 #importing classes from model directory
@@ -93,9 +95,15 @@ def satelliteephemeris():
 
     SatelliteObject = SatelliteElement(SatelliteTLE)
 
-    satelliteczml = SatelliteObject.GetCZML()
+    satellite_czml_object = SatelliteObject.GetCZML()
 
-    return satelliteczml
+    satellitelist = [satellite_czml_object]
+    czml_obj = sczml(satellite_list=satellitelist)
+    czml_string = czml_obj.get_czml()
+    last_sat_key = list(czml_obj.satellites.keys())[-1]
+    czml_obj.satellites.pop(last_sat_key, None)
+
+    return czml_string
 
 @app.route('/debris/list', methods = ['GET'])
 
@@ -137,7 +145,33 @@ def riskassessment():
         }
         risk_assessments_json.append(assessment_dict)
 
-    return jsonify(risk_assessments_json)
+    czml_objects = []
+
+    satellite_czml_object = satellite_object.GetCZML() 
+    czml_objects.append(satellite_czml_object)
+
+    for debris in risk_assessments_json:
+
+        DebrisTLEObjects = DBReadConnection.GetDebrisTLEForObject(debris['Object'])
+
+        debris_object = DebrisElement(DebrisTLEObjects,debris['Risk Severity'])
+
+        debris_czml_object = debris_object.GetCZML()
+
+        czml_objects.append(debris_czml_object)
+
+    czml_obj = sczml(satellite_list=czml_objects, speed_multiplier=1)
+    czml_string = czml_obj.get_czml()
+
+    czml_obj.satellites.clear()
+
+    risk_assessment_response = {
+
+        "risk_assessment_tabledata": risk_assessments_json,
+        "updated_czml": czml_string
+    }
+
+    return jsonify(risk_assessment_response)
 
 #Running the Flask instance
 if __name__ == '__main__':

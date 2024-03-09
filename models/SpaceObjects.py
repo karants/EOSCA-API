@@ -23,14 +23,8 @@ class DesignElementTemplate(ABC):
                              color = self.color, marker_scale=self.marker_scale,
                             show_path=self.show_path,show_label=self.show_label,
                             start_time=self.start_time, end_time=self.end_time)
-        
-        self.satellitelist = [self.spaceobj]
-        self.czml_obj = sczml(satellite_list=self.satellitelist)
-        self.czml_string = self.czml_obj.get_czml()
-        last_sat_key = list(self.czml_obj.satellites.keys())[-1]
-        self.czml_obj.satellites.pop(last_sat_key, None)
 
-        return self.czml_string
+        return self.spaceobj
     
     def getTLE(self):
 
@@ -44,7 +38,7 @@ class DesignElementTemplate(ABC):
         jd, fr = jday(current_time.year, current_time.month, current_time.day,
                       current_time.hour, current_time.minute, current_time.second + current_time.microsecond * 1e-6)
         e, r, v = self.satrec.sgp4(jd, fr)
-        
+
         return r
 
     def toggle_path_visibility(self):
@@ -60,40 +54,29 @@ class SatelliteElement(DesignElementTemplate):
         self.satrec = Satrec.twoline2rv(*self.TLE[1:])
 
 class DebrisElement(DesignElementTemplate):
-    def __init__(self, TLE):
+    def __init__(self, TLE, risk=None):
         super().__init__()
 
         self.object_id = TLE[0]
         self.TLE = TLE[1:]
         self.show_path = False  #overriding super
-        self.satrec = Satrec.twoline2rv(*self.TLE[1:])        
+        self.satrec = Satrec.twoline2rv(*self.TLE[1:])       
 
-class CriticalRiskDebrisElement(DebrisElement):
-    def __init__(self):
-        super().__init__()
-        self.risk_level = "Critical"
-        # Additional attributes or methods specific to critical risk debris
+        if risk == "Critical":
+            self.color = [108, 52, 131]
+            self.marker_scale= 8
 
-    def display_element(self):
-        # Implementation specific to CriticalRiskDebrisElement
-        print(f"Displaying Critical Risk Debris Element. Show path: {self.show_path}, Risk level: {self.risk_level}")
-
-class HighRiskDebrisElement(DebrisElement):
-    def __init__(self):
-        super().__init__()
-        self.risk_level = "High"
-        # Additional attributes or methods specific to high risk debris
-
-    def display_element(self):
-        # Implementation specific to HighRiskDebrisElement
-        print(f"Displaying High Risk Debris Element. Show path: {self.show_path}, Risk level: {self.risk_level}")
-
-class MediumLowRiskDebrisElement(DebrisElement):
-    def __init__(self):
-        super().__init__()
-        self.risk_level = "Medium-Low"
-        # Additional attributes or methods specific to medium-low risk debris
-
-    def display_element(self):
-        # Implementation specific to MediumLowRiskDebrisElement
-        print(f"Displaying Medium-Low Risk Debris Element. Show path: {self.show_path}, Risk level: {self.risk_level}")
+        elif risk == "High":
+            self.color = [169, 50, 38]
+            self.marker_scale= 6
+        
+        elif risk == "Medium":
+            self.color = [19, 141, 117]
+            self.marker_scale= 3
+        
+        elif risk == "Low":
+            self.color = [19, 141, 117]
+            self.marker_scale= 3
+        
+        else:
+            self.color = [250,250,255]
