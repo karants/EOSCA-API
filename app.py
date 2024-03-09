@@ -98,7 +98,7 @@ def satelliteephemeris():
     satellite_czml_object = SatelliteObject.GetCZML()
 
     satellitelist = [satellite_czml_object]
-    czml_obj = sczml(satellite_list=satellitelist)
+    czml_obj = sczml(satellite_list=satellitelist, speed_multiplier=1)
     czml_string = czml_obj.get_czml()
     last_sat_key = list(czml_obj.satellites.keys())[-1]
     czml_obj.satellites.pop(last_sat_key, None)
