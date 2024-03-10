@@ -178,7 +178,7 @@ def riskassessment():
         "updated_czml": czml_string
     }
 
-    return czml_string #jsonify(risk_assessment_response)
+    return jsonify(risk_assessment_response)
 
 #Running the Flask instance
 if __name__ == '__main__':
