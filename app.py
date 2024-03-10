@@ -170,17 +170,17 @@ def riskassessment():
                      )
 
     czml_string = czml_obj.get_czml()
-    czml_obj.satellites.clear()
+    czml_python = json.loads(czml_string)
 
-    ra_json = json.dumps(risk_assessments_json)
+    czml_obj.satellites.clear()
 
     risk_assessment_response = {
 
-        "risk_assessment_tabledata": ra_json,
-        "updated_czml": czml_string
+        "risk_assessment_tabledata": risk_assessments_json,
+        "updated_czml": czml_python
     }
 
-    return risk_assessment_response
+    return jsonify(risk_assessment_response)
 
 #Running the Flask instance
 if __name__ == '__main__':
