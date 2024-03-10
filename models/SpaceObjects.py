@@ -6,16 +6,18 @@ from sgp4.api import Satrec
 from sgp4.conveniences import jday
 
 class DesignElementTemplate(ABC):
+
+    start_time = datetime.now()
+    end_time = start_time + timedelta(days=1)
+
     def __init__(self):
         self.object_id = ""
         self.show_path = False  
         self.show_label = False  
         self.use_default_image = False
         self.color = [250,250,255]
-        self.marker_scale= 10
+        self.marker_scale= 20
         self.TLE = []
-        self.start_time = datetime.now()
-        self.end_time = self.start_time + timedelta(days=1)
 
     def GetCZML(self):
 
@@ -64,19 +66,19 @@ class DebrisElement(DesignElementTemplate):
 
         if risk == "Critical":
             self.color = [108, 52, 131]
-            self.marker_scale= 8
+            self.marker_scale= 16
 
         elif risk == "High":
             self.color = [169, 50, 38]
-            self.marker_scale= 6
+            self.marker_scale= 12
         
         elif risk == "Medium":
             self.color = [19, 141, 117]
-            self.marker_scale= 3
+            self.marker_scale= 8
         
         elif risk == "Low":
             self.color = [19, 141, 117]
-            self.marker_scale= 3
+            self.marker_scale= 6
         
         else:
             self.color = [250,250,255]

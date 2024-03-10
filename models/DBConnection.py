@@ -163,7 +163,7 @@ class DBRead:
     def __init__(self):
 
         #instantiating the pool with a size
-        self.pool = DBReadPool(5)
+        self.pool = DBReadPool(12)
 
         # Defining the maximum number of closest approaches to obtain
         self.numberofcas = 50

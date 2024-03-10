@@ -3,11 +3,8 @@
 #Importing pip libraries
 from flask import Flask, jsonify, request
 from apscheduler.schedulers.background import BackgroundScheduler
-from dotenv import load_dotenv
 import os
 import datetime
-from satellite_czml import satellite_czml
-from satellite_czml import satellite
 import sys
 from flask_cors import CORS
 from satellite_czml import satellite_czml as sczml
@@ -98,7 +95,7 @@ def satelliteephemeris():
     satellite_czml_object = SatelliteObject.GetCZML()
 
     satellitelist = [satellite_czml_object]
-    czml_obj = sczml(satellite_list=satellitelist, speed_multiplier=1)
+    czml_obj = sczml(satellite_list=satellitelist, speed_multiplier=70)
     czml_string = czml_obj.get_czml()
     last_sat_key = list(czml_obj.satellites.keys())[-1]
     czml_obj.satellites.pop(last_sat_key, None)
@@ -125,23 +122,24 @@ def riskassessment():
 
     satellite_object = SatelliteElement(SatelliteTLE)
 
-    debris_objects = [DebrisElement(TLE) for TLE in DebrisTLEs]
+    #debris_objects = [DebrisElement(TLE) for TLE in DebrisTLEs]
 
     RiskAssessor = CollisionRiskAssessor() 
 
-    risk_assessments = RiskAssessor.assess_collision_risk(satellite_object, debris_objects)
+    risk_assessments = RiskAssessor.assess_collision_risk_parallel(SatelliteTLE, DebrisTLEs)
 
-    risk_assessments_sorted = sorted(risk_assessments, key=lambda x: x.closest_approach_distance, reverse=False)[:50]
+    risk_assessments_sorted = sorted(risk_assessments, key=lambda x: x['closest_approach_distance'], reverse=False)[:50]
 
     risk_assessments_json = []
 
     for assessment in risk_assessments_sorted:
+
         assessment_dict = {
-            "Time of Closest Approach": assessment.closest_approach_time.strftime("%Y-%m-%d %H:%M:%S"),
-            "Closest Approach Distance (km)": assessment.closest_approach_distance,
-            "Object": assessment.debris_id,
-            "Probability of Collision": assessment.probability,
-            "Risk Severity": assessment.risk_level
+            "Time of Closest Approach": assessment['closest_approach_time'].strftime("%Y-%m-%d %H:%M:%S") if assessment['closest_approach_time'] else "N/A",
+            "Closest Approach Distance (km)": assessment['closest_approach_distance'],
+            "Object": assessment['debris_id'],
+            "Probability of Collision": assessment['probability'],
+            "Risk Severity": assessment['risk_level']
         }
         risk_assessments_json.append(assessment_dict)
 
@@ -160,9 +158,18 @@ def riskassessment():
 
         czml_objects.append(debris_czml_object)
 
-    czml_obj = sczml(satellite_list=czml_objects, speed_multiplier=1)
-    czml_string = czml_obj.get_czml()
+    czml_obj = sczml(satellite_list=czml_objects, speed_multiplier=70)
 
+    #debris_keys = 
+    #last_debris_key = None
+    
+    for key in list(czml_obj.satellites.keys()):
+        last_debris_key = key
+        czml_obj.satellites[last_debris_key].build_marker(rebuild=True,
+                      outlineColor=[0, 0, 0, 0],
+                     )
+
+    czml_string = czml_obj.get_czml()
     czml_obj.satellites.clear()
 
     risk_assessment_response = {
@@ -171,7 +178,7 @@ def riskassessment():
         "updated_czml": czml_string
     }
 
-    return jsonify(risk_assessment_response)
+    return czml_string #jsonify(risk_assessment_response)
 
 #Running the Flask instance
 if __name__ == '__main__':
