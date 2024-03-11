@@ -29,6 +29,15 @@ jobs:
 
       - name: Install dependencies
         run: pip install -r requirements.txt
+      - name: Patch satellite_czml czml.py
+        run: |
+          CZML_PATH=$(find /tmp -name czml.py)
+          if [ ! -z "$CZML_PATH" ]; then
+            sed -i '38s/.*/from pygeoif.factories import shape as asShape/' $CZML_PATH
+          else
+            echo "czml.py not found"
+            exit 1
+          fi
 
       # Optional: Add step to run tests here (PyTest, Django test suites, etc.)
       - name: Zip artifact for deployment
