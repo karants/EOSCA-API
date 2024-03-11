@@ -31,7 +31,7 @@ jobs:
         run: pip install -r requirements.txt
       - name: Patch satellite_czml czml.py
         run: |
-          CZML_PATH=$(find /tmp -name czml.py)
+          CZML_PATH=$(find /tmp -name czml.py 2>/dev/null)
           if [ ! -z "$CZML_PATH" ]; then
             sed -i '38s/.*/from pygeoif.factories import shape as asShape/' $CZML_PATH
           else
