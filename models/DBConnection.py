@@ -17,7 +17,7 @@ class DBConnectionString:
         self.__database = os.getenv('database')
         self.__sqlusername = os.getenv('sqlusername')
         self.__sqlpassword = os.getenv('sqlpassword')
-        self.__conn_string = 'DRIVER='+self.__driver+';SERVER=tcp:'+self.__server+';PORT=1433;DATABASE='+self.__database+';UID='+self.__sqlusername+';PWD='+ self.__sqlpassword
+        self.__conn_string = 'DRIVER='+self.__driver+';SERVER=tcp:'+self.__server+';PORT=1433;DATABASE='+self.__database+';UID='+self.__sqlusername+';PWD='+ self.__sqlpassword + ';TrustServerCertificate=yes;'
 
 
     def GetConnectionString(self):
