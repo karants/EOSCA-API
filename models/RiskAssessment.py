@@ -3,6 +3,9 @@ import numpy as np
 from concurrent.futures import  ProcessPoolExecutor
 from models.SpaceObjects import DebrisElement, SatelliteElement
 import os
+from satellite_czml import satellite_czml as sczml
+from satellite_czml import satellite as sat
+import json
 
 class RiskAssessment:
     def __init__(self, debris_id, closest_approach_time, closest_approach_distance, probability, risk_level):
@@ -57,7 +60,7 @@ class CollisionRiskAssessor:
         else:
             return "Undefined"
     
-    def assess_risk_for_single_debris(self,satellite_tle, debris_tle):
+    def assess_risk_for_single_debris(self,satellite_tle, debris_tle, timeinterval):
 
         #risk_assessments = []
         
@@ -69,7 +72,7 @@ class CollisionRiskAssessor:
         closest_approach_time = None
         current_time = datetime.utcnow()
         end_time = current_time + timedelta(hours=24)
-        time_step = timedelta(minutes=1)
+        time_step = timedelta(minutes=timeinterval)
         
         while current_time < end_time:
             r_satellite = satellite.get_position(current_time)
@@ -95,10 +98,65 @@ class CollisionRiskAssessor:
         }
             
 
-        #return RiskAssessment(object_id, closest_approach_time, closest_approach_distance, probability, risk_level)
+    def AssessCollisionRiskParallel(self, satellite_tle, debris_tles, TimeInterval):
 
-    def assess_collision_risk_parallel(self, satellite_tle, debris_tles):
         with ProcessPoolExecutor(max_workers=int(os.getenv('maxworkers'))) as executor:
-            futures = [executor.submit(self.assess_risk_for_single_debris, satellite_tle, debris_tle) for debris_tle in debris_tles]
+            futures = [executor.submit(self.assess_risk_for_single_debris, satellite_tle, debris_tle, TimeInterval) for debris_tle in debris_tles]
             risk_assessments = [future.result() for future in futures]
-        return risk_assessments
+
+            risk_assessments_sorted = sorted(risk_assessments, key=lambda x: x['closest_approach_distance'], reverse=False)[:50]
+
+        return risk_assessments_sorted
+    
+    @staticmethod
+    def GetAssessmentJSON(RiskAssessments):
+
+            risk_assessments_json = []
+
+            for assessment in RiskAssessments:
+
+                assessment_dict = {
+                    "Time of Closest Approach": assessment['closest_approach_time'].strftime("%Y-%m-%d %H:%M:%S") if assessment['closest_approach_time'] else "N/A",
+                    "Closest Approach Distance (km)": assessment['closest_approach_distance'],
+                    "Object": assessment['debris_id'],
+                    "Probability of Collision": assessment['probability'],
+                    "Risk Severity": assessment['risk_level']
+                }
+
+                risk_assessments_json.append(assessment_dict)
+
+            return risk_assessments_json
+    
+    @staticmethod
+    def UpdateCZMLPostAssessment(DBReadConnection, SatelliteObject, RiskAssessmentsJSON):
+
+        CZMLObjects = []
+
+        satellite_czml_object = SatelliteObject.GetCZMLObject() 
+
+        CZMLObjects.append(satellite_czml_object)
+
+        for debris in RiskAssessmentsJSON:
+
+            DebrisTLEObjects = DBReadConnection.GetDebrisTLEForObject(debris['Object'])
+
+            debris_object = DebrisElement(DebrisTLEObjects,debris['Risk Severity'])
+
+            debris_czml_object = debris_object.GetCZMLObject()
+
+            CZMLObjects.append(debris_czml_object)
+
+        czml_obj = sczml(satellite_list=CZMLObjects, speed_multiplier=70)
+        
+        for key in list(czml_obj.satellites.keys()):
+            last_debris_key = key
+            czml_obj.satellites[last_debris_key].build_marker(rebuild=True,
+                        outlineColor=[0, 0, 0, 0],
+                        )
+
+        czml_string = czml_obj.get_czml()
+        czml_python = json.loads(czml_string)
+
+        czml_obj.satellites.clear()
+
+        return czml_python

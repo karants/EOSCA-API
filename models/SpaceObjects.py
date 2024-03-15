@@ -17,9 +17,10 @@ class DesignElementTemplate(ABC):
         self.use_default_image = False
         self.color = [250,250,255]
         self.marker_scale= 20
+        self.speed_multiplier = 70
         self.TLE = []
 
-    def GetCZML(self):
+    def GetCZMLObject(self):
 
         self.spaceobj = sat(self.TLE, use_default_image=self.use_default_image, 
                              color = self.color, marker_scale=self.marker_scale,
@@ -54,6 +55,17 @@ class SatelliteElement(DesignElementTemplate):
         self.TLE = TLE[1:]
         self.show_path = True  #overriding super
         self.satrec = Satrec.twoline2rv(*self.TLE[1:])
+
+    def GetCZMLString(self):
+
+        SatelliteCZMLObject = self.GetCZMLObject()
+        SatelliteList = [SatelliteCZMLObject]
+        CZMLObject = sczml(satellite_list=SatelliteList, speed_multiplier=self.speed_multiplier)
+        CZMLString = CZMLObject.get_czml()
+        LastKey = list(CZMLObject.satellites.keys())[-1]
+        CZMLObject.satellites.pop(LastKey, None)
+
+        return CZMLString
 
 class DebrisElement(DesignElementTemplate):
     def __init__(self, TLE, risk=None):

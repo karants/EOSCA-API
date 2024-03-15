@@ -7,16 +7,13 @@ import os
 import datetime
 import sys
 from flask_cors import CORS
-from satellite_czml import satellite_czml as sczml
-from satellite_czml import satellite as sat
-import json
 
-#importing classes from model directory
+#Importing classes from model directory
 from models.DBConnection import DBRead, DBWrite, DBConnTest
 from models.RiskAssessment import CollisionRiskAssessor
-from models.SpaceObjects import DebrisElement, SatelliteElement
+from models.SpaceObjects import  SatelliteElement
 
-#function definition for refreshing
+#Function definition for refreshing telemetry
 def refreshTelemetry():
 
     #Recreate the telemetry table
@@ -48,12 +45,12 @@ def home():
 
 @app.route("/healthcheck/", methods=['GET'])
 
-def healthcheck():
+def HealthCheck():
     return jsonify({'message': "I'm up and running :)"})
 
 @app.route("/refresh/status", methods=['GET'])
 
-def getrefreshstatus():
+def GetRefreshStatus():
 
     status = DBReadConnection.GetRefreshState()
 
@@ -65,46 +62,36 @@ def getrefreshstatus():
 
 @app.route("/refresh/lastrefreshtime", methods=['GET'])
 
-def getlastrefreshtime():
+def GetLastRefresh():
 
-    lastrefresh = DBReadConnection.GetLastDataRefreshTime()
+    LastRefresh = DBReadConnection.GetLastDataRefreshTime()
 
-    print(lastrefresh)
-
-    return jsonify({'lastrefresh': lastrefresh})
+    return jsonify({'lastrefresh': LastRefresh})
 
     
 @app.route('/satellite/list', methods = ['GET'])
 
-def getsatellites():
+def GetSatellites():
 
-    satellites = DBReadConnection.GetSatellites()
+    Satellites = DBReadConnection.GetSatellites()
 
-    return jsonify(satellites)
+    return jsonify(Satellites)
 
 @app.route('/satellite/ephemeris',methods = ['POST'])
 
-def satelliteephemeris():
+def SatelliteEphemeris():
     
-    satelliteid = request.form['satid']
+    SatelliteID = request.form['satid']
 
-    SatelliteTLE = DBReadConnection.GetSatelliteTLE(satelliteid)
+    SatelliteTLE = DBReadConnection.GetSatelliteTLE(SatelliteID)
 
     SatelliteObject = SatelliteElement(SatelliteTLE)
 
-    satellite_czml_object = SatelliteObject.GetCZML()
-
-    satellitelist = [satellite_czml_object]
-    czml_obj = sczml(satellite_list=satellitelist, speed_multiplier=70)
-    czml_string = czml_obj.get_czml()
-    last_sat_key = list(czml_obj.satellites.keys())[-1]
-    czml_obj.satellites.pop(last_sat_key, None)
-
-    return czml_string
+    return SatelliteObject.GetCZMLString()
 
 @app.route('/debris/list', methods = ['GET'])
 
-def getdebris():
+def GetDebris():
 
     debris = DBReadConnection.GetDebris()
 
@@ -112,75 +99,40 @@ def getdebris():
 
 @app.route('/satellite/riskassessment',methods = ['POST'])
 
-def riskassessment():
+def RiskAssessment():
     
-    satelliteid = request.form['satid']
+    #Get the satellite id from frontend
+    SatelliteID = request.form['satid']
 
-    SatelliteTLE = DBReadConnection.GetSatelliteTLE(satelliteid)
+    #Read the TLE data from the database for the chosen satellite
+    SatelliteTLE = DBReadConnection.GetSatelliteTLE(SatelliteID)
 
+    #Read the TLE data from the database for all of the Debris objects
     DebrisTLEs = DBReadConnection.GetDebrisTLEs()
 
-    satellite_object = SatelliteElement(SatelliteTLE)
+    #Initiate the SatelliteObject
+    SatelliteObject = SatelliteElement(SatelliteTLE)
 
-    #debris_objects = [DebrisElement(TLE) for TLE in DebrisTLEs]
-
+    #Initiate the RiskAssessor Object
     RiskAssessor = CollisionRiskAssessor() 
 
-    risk_assessments = RiskAssessor.assess_collision_risk_parallel(SatelliteTLE, DebrisTLEs)
+    #Retrieve risk assessment results between the satellite and all of the debris
+    RiskAssessments = RiskAssessor.AssessCollisionRiskParallel(SatelliteTLE, DebrisTLEs, TimeInterval=1)
 
-    risk_assessments_sorted = sorted(risk_assessments, key=lambda x: x['closest_approach_distance'], reverse=False)[:50]
+    #Convert risk assessment results to JSON
+    RiskAssessmentsJSON = RiskAssessor.GetAssessmentJSON(RiskAssessments)
 
-    risk_assessments_json = []
+    #Get the updated CZML after the risk assessment with the top 50 debris objects and the satellite
+    UpdatedCZML = RiskAssessor.UpdateCZMLPostAssessment(DBReadConnection, SatelliteObject, RiskAssessmentsJSON)
 
-    for assessment in risk_assessments_sorted:
+    #Create a nested JSON for the response
+    RiskAssessmentResponse = {
 
-        assessment_dict = {
-            "Time of Closest Approach": assessment['closest_approach_time'].strftime("%Y-%m-%d %H:%M:%S") if assessment['closest_approach_time'] else "N/A",
-            "Closest Approach Distance (km)": assessment['closest_approach_distance'],
-            "Object": assessment['debris_id'],
-            "Probability of Collision": assessment['probability'],
-            "Risk Severity": assessment['risk_level']
-        }
-        risk_assessments_json.append(assessment_dict)
-
-    czml_objects = []
-
-    satellite_czml_object = satellite_object.GetCZML() 
-    czml_objects.append(satellite_czml_object)
-
-    for debris in risk_assessments_json:
-
-        DebrisTLEObjects = DBReadConnection.GetDebrisTLEForObject(debris['Object'])
-
-        debris_object = DebrisElement(DebrisTLEObjects,debris['Risk Severity'])
-
-        debris_czml_object = debris_object.GetCZML()
-
-        czml_objects.append(debris_czml_object)
-
-    czml_obj = sczml(satellite_list=czml_objects, speed_multiplier=70)
-
-    #debris_keys = 
-    #last_debris_key = None
-    
-    for key in list(czml_obj.satellites.keys()):
-        last_debris_key = key
-        czml_obj.satellites[last_debris_key].build_marker(rebuild=True,
-                      outlineColor=[0, 0, 0, 0],
-                     )
-
-    czml_string = czml_obj.get_czml()
-    czml_python = json.loads(czml_string)
-
-    czml_obj.satellites.clear()
-
-    risk_assessment_response = {
-
-        "risk_assessment_tabledata": risk_assessments_json,
-        "updated_czml": czml_python
+        "risk_assessment_tabledata": RiskAssessmentsJSON,
+        "updated_czml": UpdatedCZML
     }
 
-    return jsonify(risk_assessment_response)
+    return jsonify(RiskAssessmentResponse)
 
 #Running the Flask instance
 if __name__ == '__main__':
