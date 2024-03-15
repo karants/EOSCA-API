@@ -134,6 +134,33 @@ def RiskAssessment():
 
     return jsonify(RiskAssessmentResponse)
 
+@app.route('/reassess/debris',methods = ['POST'])
+
+def RefineAssessment():
+
+    #Get the ObjectIDs from frontend
+    ObjectIDs = request.get_json()
+
+    #Read the TLE data from the database for the chosen satellite
+    SatelliteTLE = DBReadConnection.GetSatelliteTLE(ObjectIDs['SatelliteID'])
+
+    #Retrieve Debris TLEs
+    DebrisTLEs = []
+    for DebrisID in ObjectIDs['DebrisIDs']:
+      DebrisTLEObject = DBReadConnection.GetDebrisTLEForObject(DebrisID)
+      DebrisTLEs.append(DebrisTLEObject)
+
+    #Initiate the RiskAssessor Object
+    RiskAssessor = CollisionRiskAssessor() 
+
+    #Retrieve enhanced risk assessment results between the satellite and all of the debris for 1 second intervals
+    RiskAssessments = RiskAssessor.AssessCollisionRiskParallel(SatelliteTLE, DebrisTLEs, TimeInterval=0.0167)
+
+    #Convert risk assessment results to JSON
+    RiskAssessmentsJSON = RiskAssessor.GetAssessmentJSON(RiskAssessments)
+
+    return jsonify(RiskAssessmentsJSON)
+
 #Running the Flask instance
 if __name__ == '__main__':
     
