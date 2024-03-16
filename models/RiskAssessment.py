@@ -1,10 +1,9 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import numpy as np
 from concurrent.futures import  ProcessPoolExecutor
 from models.SpaceObjects import DebrisElement, SatelliteElement
 import os
 from satellite_czml import satellite_czml as sczml
-from satellite_czml import satellite as sat
 import json
 
 class RiskAssessment:
@@ -25,7 +24,7 @@ class CollisionRiskAssessor:
         self.radius_debris = 0.10 # km (worst case scenario: debris field)
         self.risk_boundary = self.margin_of_error + self.threshold_distance #The sum of margin_of_error and threshold_distance, representing a distance beyond which the risk of collision is considered extremely low.
         self.collision_radius = self.radius_satellite + self.radius_debris
-        self.start_time = datetime.utcnow()
+        self.start_time = datetime.now(timezone.utc)
         self.duration = timedelta(hours=24)
         self.time_step = timedelta(minutes=1)
 

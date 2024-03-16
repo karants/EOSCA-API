@@ -5,6 +5,8 @@ import json
 from datetime import datetime
 import time
 
+from models.SpacetrackAPI import SpaceTrackAPI 
+
 #Defining the connection string to the DB that can be utilized by multiple DB connection objects - reducing code duplication
 class DBConnectionString:
 
@@ -81,10 +83,8 @@ class DBWrite:
 
     def CopySpaceObjectTelemetry(self):
 
-        file_path = 'spacetrackfeb17.json'
-
-        with open(file_path, 'r') as file:
-            data = json.load(file)
+        APISession = SpaceTrackAPI()
+        APIResponse = APISession.GetResponse()
 
         # Function to parse and return datetime object from string
         def parse_datetime(datetime_str):
@@ -95,7 +95,7 @@ class DBWrite:
 
         # Deduplication logic
         unique_records = {}
-        for item in data:
+        for item in APIResponse:
             object_id = item["OBJECT_ID"]
             creation_date = parse_datetime(item["CREATION_DATE"])
             if object_id not in unique_records or creation_date > parse_datetime(unique_records[object_id]["CREATION_DATE"]):
@@ -105,7 +105,6 @@ class DBWrite:
                 INSERT INTO SpaceObjectTelemetry (CREATION_DATE, OBJECT_NAME, OBJECT_ID, NORAD_CAT_ID, OBJECT_TYPE, TLE_LINE0, TLE_LINE1, TLE_LINE2)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 ''' 
-        i = 1
         # Iterate over each item in the JSON data and insert it into the database
         for item in unique_records.values():
             self.conn.execute(sql_query, (
@@ -121,8 +120,6 @@ class DBWrite:
 
             # Commit the transaction for each insert to ensure data integrity
             self.conn.commit()
-            print(i)
-            i=i+1
 
         sql_query = "UPDATE LastRefresh SET Refresh_Time = ? WHERE Refresh_ID = 1"
         self.conn.execute(sql_query, (datetime.now()))
