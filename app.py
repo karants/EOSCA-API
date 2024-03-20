@@ -159,7 +159,20 @@ def RefineAssessment():
     #Convert risk assessment results to JSON
     RiskAssessmentsJSON = RiskAssessor.GetAssessmentJSON(RiskAssessments)
 
-    return jsonify(RiskAssessmentsJSON)
+    #Initiate the SatelliteObject
+    SatelliteObject = SatelliteElement(SatelliteTLE)
+
+    #Get the updated CZML after the risk assessment with the top 50 debris objects and the satellite
+    UpdatedCZML = RiskAssessor.UpdateCZMLPostAssessment(DBReadConnection, SatelliteObject, RiskAssessmentsJSON)
+
+    #Create a nested JSON for the response
+    RiskAssessmentResponse = {
+
+        "risk_assessment_tabledata": RiskAssessmentsJSON,
+        "updated_czml": UpdatedCZML
+    }
+
+    return jsonify(RiskAssessmentResponse)
 
 #Running the Flask instance
 if __name__ == '__main__':

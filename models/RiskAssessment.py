@@ -145,7 +145,7 @@ class CollisionRiskAssessor:
 
             CZMLObjects.append(debris_czml_object)
 
-        czml_obj = sczml(satellite_list=CZMLObjects, speed_multiplier=70)
+        czml_obj = sczml(satellite_list=CZMLObjects, speed_multiplier=1)
         
         for key in list(czml_obj.satellites.keys()):
             last_debris_key = key
