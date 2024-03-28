@@ -90,7 +90,7 @@ class DebrisElement(DesignElementTemplate):
             self.marker_scale= 12
         
         elif risk == "Medium":
-            self.color = [19, 141, 117]
+            self.color = [209, 200, 25]
             self.marker_scale= 8
         
         elif risk == "Low":
