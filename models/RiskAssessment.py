@@ -61,9 +61,6 @@ class CollisionRiskAssessor:
     
     def assess_risk_for_single_debris(self,satellite_tle, debris_tle, timeinterval):
 
-        #risk_assessments = []
-        
-        #for i, debris in enumerate(debris_objects, start=1):
         satellite = SatelliteElement(satellite_tle)
         debris = DebrisElement(debris_tle)
         

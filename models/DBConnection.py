@@ -1,7 +1,6 @@
 from dotenv import load_dotenv
 import os
 import pyodbc
-import json
 from datetime import datetime
 import time
 

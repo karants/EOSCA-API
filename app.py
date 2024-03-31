@@ -2,9 +2,6 @@
 
 #Importing pip libraries
 from flask import Flask, jsonify, request
-from apscheduler.schedulers.background import BackgroundScheduler
-import os
-import datetime
 import sys
 from flask_cors import CORS
 
@@ -29,7 +26,6 @@ CORS(app)
 DBReadConnection = DBRead()
 DBWriteConnection = DBWrite()
 DBConnectionTest = DBConnTest()
-
 
 runrefreshflag = 0 #ONLY CHANGE TO 1 IF REFRESHING THE TELEMETRY IS REQUIRED. IF THIS WAS HOSTED ON A WEB SERVER, AUTOMATION WOULD BE IN PLACE TO REFRESH TELEMETRY EVERY 24 HOURS
 
@@ -73,18 +69,21 @@ def GetLastRefresh():
 
 def GetSatellites():
 
-    Satellites = DBReadConnection.GetSatellites()
+    Satellites = DBReadConnection.GetSatellites() #Get a list of all satellites
 
     return jsonify(Satellites)
 
 @app.route('/satellite/ephemeris',methods = ['POST'])
 
-def SatelliteEphemeris():
+def SatelliteEphemeris(): #Retrieves ephemeris in CZML format for the chosen satellite
     
+    #Retrieve satid from the form
     SatelliteID = request.form['satid']
 
+    #Read TLE data from the database for the chosen satellite
     SatelliteTLE = DBReadConnection.GetSatelliteTLE(SatelliteID)
 
+    #Create a SatelliteElement object for the satellite using the TLE data that is retrieved
     SatelliteObject = SatelliteElement(SatelliteTLE)
 
     return SatelliteObject.GetCZMLString()
@@ -93,7 +92,7 @@ def SatelliteEphemeris():
 
 def GetDebris():
 
-    debris = DBReadConnection.GetDebris()
+    debris = DBReadConnection.GetDebris() #Get a list of all the Debris
 
     return jsonify(debris)
 
@@ -141,6 +140,8 @@ def RefineAssessment():
     #Get the ObjectIDs from frontend
     ObjectIDs = request.get_json()
 
+    OneSecondInterval = 0.0167
+
     #Read the TLE data from the database for the chosen satellite
     SatelliteTLE = DBReadConnection.GetSatelliteTLE(ObjectIDs['SatelliteID'])
 
@@ -154,7 +155,7 @@ def RefineAssessment():
     RiskAssessor = CollisionRiskAssessor() 
 
     #Retrieve enhanced risk assessment results between the satellite and all of the debris for 1 second intervals
-    RiskAssessments = RiskAssessor.AssessCollisionRiskParallel(SatelliteTLE, DebrisTLEs, TimeInterval=0.0167)
+    RiskAssessments = RiskAssessor.AssessCollisionRiskParallel(SatelliteTLE, DebrisTLEs, TimeInterval=OneSecondInterval)
 
     #Convert risk assessment results to JSON
     RiskAssessmentsJSON = RiskAssessor.GetAssessmentJSON(RiskAssessments)

@@ -1,6 +1,6 @@
 from satellite_czml import satellite_czml as sczml
 from satellite_czml import satellite as sat
-from abc import ABC, abstractmethod
+from abc import ABC
 from datetime import datetime, timedelta, timezone
 from sgp4.api import Satrec
 from sgp4.conveniences import jday
