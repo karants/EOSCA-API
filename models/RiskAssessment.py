@@ -19,7 +19,7 @@ class CollisionRiskAssessor:
     def __init__(self):
 
         self.margin_of_error = 3.0 #km
-        self.threshold_distance = 80.0 # km A specific distance threshold (10.0 km in this case) beyond which the probability of collision is considered low enough to be negligible.
+        self.threshold_distance = 50.0 # km A specific distance threshold (10.0 km in this case) beyond which the probability of collision is considered low enough to be negligible.
         self.radius_satellite = 0.12 # km (The Largest Object in Orbit, International Space Station is about 107m wide)
         self.radius_debris = 0.10 # km (worst case scenario: debris field)
         self.risk_boundary = self.margin_of_error + self.threshold_distance #The sum of margin_of_error and threshold_distance, representing a distance beyond which the risk of collision is considered extremely low.
